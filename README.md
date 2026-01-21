@@ -19,7 +19,7 @@ Pré-requisitos: Docker e Docker Compose instalados.
 
 1.  Clone o repositório:
     ```bash
-    git clone [https://github.com/seu-usuario/driva-tech-challenge.git](https://github.com/seu-usuario/driva-tech-challenge.git)
+    git clone [https://github.com/alexandre07255/projeto.git](https://github.com/alexandre07255/projeto.git)
     cd driva-tech-challenge
     ```
 

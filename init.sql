@@ -1,4 +1,4 @@
--- Criação do Schema (opcional, mas organizado)
+-- Criação do Schema
 CREATE SCHEMA IF NOT EXISTS dw;
 
 -- ============================================================================
@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_bronze_data ON dw.bronze_enrichments USING GIN (d
 -- 2. CAMADA GOLD (Dados Processados e Analíticos)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS dw.gold_enrichments (
-    -- Identificadores (Traduzidos conforme)
+    -- Identificadores
     id_enriquecimento TEXT PRIMARY KEY,
     id_workspace TEXT NOT NULL,
     nome_workspace TEXT,

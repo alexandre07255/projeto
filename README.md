@@ -46,11 +46,14 @@ Para que o pipeline funcione, é necessário importar os fluxos de trabalho no n
     * **Database:** `driva_dw`
     * **User:** `admin`
     * **Password:** `12346587`
-3.  Vá em **Workflows** > **Import from File** e selecione os arquivos da pasta `/workflows` deste repositório:
+3.  Crie uma credencial Bearer Auth (para o Workflow 1):
+    * **Bearer Token:** `driva_test_key_abc123xyz789`
+4.  Crie três Workflows e, para cada um, aperte **Import from File** e selecione os arquivos da pasta `/workflows` deste repositório:
     * `1_ingestao.json`
     * `2_processamento.json`
     * `3_orquestrador.json`
-4.  Ative o workflow **Orquestrador** (Toggle "Active") para rodar a cada 5 minutos, ou clique em "Execute Workflow" manualmente para carga inicial.
+5.  Aperte **Publish** em cada um deles.
+6.  Ative o workflow **Orquestrador** (Toggle "Active") para rodar a cada 5 minutos, ou clique em "Execute Workflow" manualmente para carga inicial.
 
 ---
 

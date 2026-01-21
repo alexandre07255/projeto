@@ -180,7 +180,7 @@
             {
               "id": "5f5faaba-8922-4bb1-80d9-6cfc7dac4915",
               "name": "limit",
-              "value": "={{ $('Create Iterator').item.json.limit }}",
+              "value": "={{ $('Create page and limit').item.json.limit }}",
               "type": "number"
             }
           ]
@@ -258,7 +258,7 @@
         0
       ],
       "id": "9f692f46-c300-43f9-851a-c1ed9517141f",
-      "name": "Create Iterator"
+      "name": "Create page and limit"
     }
   ],
   "pinData": {},
@@ -289,7 +289,7 @@
       "main": [
         [
           {
-            "node": "Create Iterator",
+            "node": "Create page and limit",
             "type": "main",
             "index": 0
           }
@@ -330,7 +330,7 @@
         ]
       ]
     },
-    "Create Iterator": {
+    "Create page and limit": {
       "main": [
         [
           {

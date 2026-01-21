@@ -3,25 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.3,
-      "position": [
-        0,
-        0
-      ],
-      "id": "bb01d216-9325-48cb-bc14-9a038fe2293d",
-      "name": "Schedule Trigger"
-    },
-    {
-      "parameters": {
         "workflowId": {
           "__rl": true,
           "value": "vHCuB48x2cfwHsKQmAzlR",
@@ -192,21 +173,29 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bb01d216-9325-48cb-bc14-9a038fe2293d",
+      "name": "Run every 5 minutes"
     }
   ],
   "pinData": {},
   "connections": {
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Call 'wf1_ingestao'",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Call 'wf1_ingestao'": {
       "main": [
         [
@@ -239,6 +228,17 @@
           }
         ]
       ]
+    },
+    "Run every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Call 'wf1_ingestao'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -246,7 +246,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "4a5e8ed4-0a03-4069-809e-b7715c6dc223",
+  "versionId": "83cac563-16d2-4f84-aafd-e396b7f97019",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "d57440843096aa0233273a64b42e00a17f4c2e314888ede4ebf38ae264314a50"

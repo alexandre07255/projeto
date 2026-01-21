@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Serviço 1: Banco de Dados PostgreSQL
+  postgres:
+    image: postgres:14  # Versão 14 ou superior
+    container_name: driva_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 12346587
+      POSTGRES_DB: driva_dw
+    ports:
+      - "5432:5432" # Exposição da porta padrão
+    volumes:
+      # Montagem do script de inicialização das tabelas
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Persistência dos dados do banco para não perder tudo ao reiniciar
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - driva_net
+
+  # Serviço 2: n8n (Orquestrador de Workflows)
+  n8n:
+    image: n8nio/n8n:latest # Imagem oficial
+    container_name: driva_n8n
+    restart: always
+    ports:
+      - "5678:5678" # Rodar localmente
+    environment:
+      - N8N_HOST=n8n
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      # Variáveis genéricas para facilitar o dev local (opcional)
+      - N8N_EDITOR_KEY_ENCRYPTION_PASSWORD=supersecret
+    volumes:
+      - n8n_data:/home/node/.n8n # Persistir os workflows 
+    networks:
+      - driva_net
+
+  # Serviço 3: API (Python/FastAPI sugerido)
+  api:
+    build: ./api  # O Docker vai procurar um Dockerfile dentro da pasta 'api'
+    container_name: driva_api
+    command: uvicorn main:app --host 0.0.0.0 --port 3000 --reload
+    volumes:
+      - ./api:/app # Volume para hot-reload (alterou código, atualiza na hora)
+    ports:
+      - "3000:3000" # Rodar localmente
+    environment:
+      # Conexão com Postgres usando o nome do serviço 'postgres' como host
+      - DATABASE_URL=postgresql://admin:12346587@postgres:5432/driva_dw
+    depends_on:
+      - postgres # Garante que o banco sobe antes da API
+    networks:
+      - driva_net
+
+  # Serviço 4: Frontend (React + Vite + Nginx)
+  frontend:
+    build: ./frontend
+    container_name: driva_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    networks:
+      - driva_net
+
+volumes:
+  postgres_data:
+  n8n_data:
+
+networks:
+  driva_net:
+    driver: bridge

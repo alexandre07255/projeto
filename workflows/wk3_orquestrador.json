@@ -1,0 +1,256 @@
+{
+  "name": "wk3_orquestrador",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bb01d216-9325-48cb-bc14-9a038fe2293d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "vHCuB48x2cfwHsKQmAzlR",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/vHCuB48x2cfwHsKQmAzlR",
+          "cachedResultName": "wf1_ingestao"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "0e1517da-ae03-4cfa-a4d7-2977c3d880a2",
+      "name": "Call 'wf1_ingestao'",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "nyJzz1ewOrn7QQkm-tjWP",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/nyJzz1ewOrn7QQkm-tjWP",
+          "cachedResultName": "wk2_processamento"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "02b48789-d56e-4454-8ce6-b5c62df46b4f",
+      "name": "Call 'wk2_processamento'",
+      "retryOnFail": false,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "pipeline_control",
+          "mode": "list",
+          "cachedResultName": "pipeline_control"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "total_records_ingested": "={{ $json.count }}",
+            "workflow_name": "={{ $workflow.name }}",
+            "last_run_at": "={{ $now }}"
+          },
+          "matchingColumns": [
+            "workflow_name"
+          ],
+          "schema": [
+            {
+              "id": "workflow_name",
+              "displayName": "workflow_name",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last_run_at",
+              "displayName": "last_run_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_successful_page",
+              "displayName": "last_successful_page",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "total_records_ingested",
+              "displayName": "total_records_ingested",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        832,
+        0
+      ],
+      "id": "e7c1d802-ea28-457c-898b-8ff0db58db1a",
+      "name": "Upsert in pipeline_control",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "idcTYy6kf4ZZ4K4g",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(B.id) from dw.bronze_enrichments B",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        0
+      ],
+      "id": "46a32a18-bd3e-4b14-8840-191eef6cb9a7",
+      "name": "Get Number of Ingested Records",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "idcTYy6kf4ZZ4K4g",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call 'wf1_ingestao'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'wf1_ingestao'": {
+      "main": [
+        [
+          {
+            "node": "Call 'wk2_processamento'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'wk2_processamento'": {
+      "main": [
+        [
+          {
+            "node": "Get Number of Ingested Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Number of Ingested Records": {
+      "main": [
+        [
+          {
+            "node": "Upsert in pipeline_control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "4a5e8ed4-0a03-4069-809e-b7715c6dc223",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d57440843096aa0233273a64b42e00a17f4c2e314888ede4ebf38ae264314a50"
+  },
+  "id": "e0dQBXxyK99-nsTYf59do",
+  "tags": []
+}

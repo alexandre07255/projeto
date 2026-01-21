@@ -1,0 +1,357 @@
+{
+  "name": "wf1_ingestao",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "http://api:3000/people/v1/enrichments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page",
+              "value": "={{ $json.page }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        464,
+        160
+      ],
+      "id": "619f784f-42c5-4346-85e7-e47254a71554",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "I6pRLnUiJ0r4IpQv",
+          "name": "Bearer Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "YD71uAInEQD1vWA5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        624,
+        160
+      ],
+      "id": "048701d0-fe64-4467-b648-32b36ce1cbec",
+      "name": "Split Out",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "value": "dw",
+          "mode": "list",
+          "cachedResultName": "dw"
+        },
+        "table": {
+          "__rl": true,
+          "value": "bronze_enrichments",
+          "mode": "list",
+          "cachedResultName": "bronze_enrichments"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "data": "={{ JSON.stringify($json) }}",
+            "id": "={{ $json.id }}",
+            "dw_updated_at": "={{ $now }}",
+            "page": "={{ $('HTTP Request').item.json.meta.current_page }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dw_ingested_at",
+              "displayName": "dw_ingested_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "dw_updated_at",
+              "displayName": "dw_updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "page",
+              "displayName": "page",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        832,
+        160
+      ],
+      "id": "cea9d4be-0c6e-4c00-992e-63fe262c635c",
+      "name": "Upsert to Bronze",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "idcTYy6kf4ZZ4K4g",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "bcfac8b6-1abc-48da-9307-ff20bc65ce16",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0ed1eeba-2dfd-456b-8e1d-fb75771ec6c1",
+              "name": "page",
+              "value": "={{ $('Loop until (page > limit)').item.json.page + 1 }}",
+              "type": "number"
+            },
+            {
+              "id": "5f5faaba-8922-4bb1-80d9-6cfc7dac4915",
+              "name": "limit",
+              "value": "={{ $('Create Iterator').item.json.limit }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        160
+      ],
+      "id": "23cc510e-a655-45cd-9e5f-0c97fe74443e",
+      "name": "page++",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1969c607-a21d-406e-a4fa-b13d56a34848",
+              "leftValue": "={{ $json.page }}",
+              "rightValue": "={{ $json.limit }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        304,
+        0
+      ],
+      "id": "d58b72cb-9662-44ce-8d9b-6ff5d148ee2d",
+      "name": "Loop until (page > limit)",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc875aaf-5f22-4ec3-a263-136eaf748422",
+              "name": "page",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "750d8503-a6f8-47fa-a66f-9aae86065287",
+              "name": "limit",
+              "value": 50,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        0
+      ],
+      "id": "9f692f46-c300-43f9-851a-c1ed9517141f",
+      "name": "Create Iterator"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Upsert to Bronze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Create Iterator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert to Bronze": {
+      "main": [
+        [
+          {
+            "node": "page++",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "page++": {
+      "main": [
+        [
+          {
+            "node": "Loop until (page > limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop until (page > limit)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Iterator": {
+      "main": [
+        [
+          {
+            "node": "Loop until (page > limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "932201ff-3288-480e-9c2e-67538a673d85",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d57440843096aa0233273a64b42e00a17f4c2e314888ede4ebf38ae264314a50"
+  },
+  "id": "vHCuB48x2cfwHsKQmAzlR",
+  "tags": []
+}

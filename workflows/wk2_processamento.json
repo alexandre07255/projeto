@@ -1,0 +1,300 @@
+{
+  "name": "wk2_processamento",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "dw",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "bronze_enrichments",
+          "mode": "list",
+          "cachedResultName": "bronze_enrichments"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f3c13239-9cfa-4af6-9206-f1335ac75787",
+      "name": "Read from Bronze",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "idcTYy6kf4ZZ4K4g",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega todos os itens que vieram do nó anterior (Postgres Bronze)\nconst allItems = $input.all();\n\n// Itera sobre todos os itens que vieram do banco (Bronze)\nreturn allItems.map(item => {\n  // Acessa a coluna 'data' (o JSONB) que veio do Postgres\n  // O \"|| {}\" previne erro se o campo data estiver null\n  const raw = item.json.data || {};\n  const createdAt = new Date(raw.created_at);\n  const updatedAt = new Date(raw.updated_at);\n  \n  // Cálculo de duração em minutos\n  const diffMs = updatedAt.getTime() - createdAt.getTime();\n  const duracaoMin = Math.floor(diffMs / 60000);\n  \n  // Categorização de tamanho\n  let tamanho = 'MUITO_GRANDE';\n  if (raw.total_contacts < 100) tamanho = 'PEQUENO';\n  else if (raw.total_contacts <= 500) tamanho = 'MEDIO';\n  else if (raw.total_contacts <= 1000) tamanho = 'GRANDE';\n\n  // Tradução de Status\n  const statusMap = {\n    'PROCESSING': 'EM_PROCESSAMENTO',\n    'COMPLETED': 'CONCLUIDO',\n    'FAILED': 'FALHOU',\n    'CANCELED': 'CANCELADO'\n  };\n\n  return {\n    json: {\n      id_enriquecimento: raw.id,\n      id_workspace: raw.id_workspace,\n      nome_workspace: raw.workspace_name,\n      total_contatos: raw.total_contacts,\n      tipo_contato: raw.contact_type === 'PERSON' ? 'PESSOA' : 'EMPRESA',\n      status_processamento: statusMap[raw.status] || raw.status,\n      data_criacao: raw.created_at,\n      data_atualizacao: raw.updated_at,\n      duracao_processamento_minutos: duracaoMin,\n      tempo_por_contato_minutos: raw.total_contacts > 0 ? (duracaoMin / raw.total_contacts) : 0,\n      processamento_sucesso: raw.status === 'COMPLETED',\n      categoria_tamanho_job: tamanho,\n      necessita_reprocessamento: ['FAILED', 'CANCELED'].includes(raw.status),\n      data_atualizacao_dw: new Date().toISOString() // Snapshot\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "2451edeb-5277-4430-8894-de84915c4db1",
+      "name": "Enrichment"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "value": "dw",
+          "mode": "list",
+          "cachedResultName": "dw"
+        },
+        "table": {
+          "__rl": true,
+          "value": "gold_enrichments",
+          "mode": "list",
+          "cachedResultName": "gold_enrichments"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "processamento_sucesso": "={{ $json.processamento_sucesso }}",
+            "necessita_reprocessamento": "={{ $json.necessita_reprocessamento }}",
+            "total_contatos": "={{ $json.total_contatos }}",
+            "duracao_processamento_minutos": "={{ $json.duracao_processamento_minutos }}",
+            "tempo_por_contato_minutos": "={{ $json.tempo_por_contato_minutos }}",
+            "id_enriquecimento": "={{ $json.id_enriquecimento }}",
+            "id_workspace": "={{ $json.id_workspace }}",
+            "nome_workspace": "={{ $json.nome_workspace }}",
+            "tipo_contato": "={{ $json.tipo_contato }}",
+            "status_processamento": "={{ $json.status_processamento }}",
+            "data_criacao": "={{ $json.data_criacao }}",
+            "data_atualizacao": "={{ $json.data_atualizacao }}",
+            "categoria_tamanho_job": "={{ $json.categoria_tamanho_job }}",
+            "data_atualizacao_dw": "={{ $json.data_atualizacao_dw }}"
+          },
+          "matchingColumns": [
+            "id_enriquecimento"
+          ],
+          "schema": [
+            {
+              "id": "id_enriquecimento",
+              "displayName": "id_enriquecimento",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id_workspace",
+              "displayName": "id_workspace",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "nome_workspace",
+              "displayName": "nome_workspace",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "total_contatos",
+              "displayName": "total_contatos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "tipo_contato",
+              "displayName": "tipo_contato",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status_processamento",
+              "displayName": "status_processamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "data_criacao",
+              "displayName": "data_criacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "data_atualizacao",
+              "displayName": "data_atualizacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duracao_processamento_minutos",
+              "displayName": "duracao_processamento_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "tempo_por_contato_minutos",
+              "displayName": "tempo_por_contato_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "processamento_sucesso",
+              "displayName": "processamento_sucesso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "categoria_tamanho_job",
+              "displayName": "categoria_tamanho_job",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "necessita_reprocessamento",
+              "displayName": "necessita_reprocessamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "data_atualizacao_dw",
+              "displayName": "data_atualizacao_dw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        0
+      ],
+      "id": "cfab8f98-eea1-494b-b4c6-fbe68bde3a4f",
+      "name": "Upsert to Gold",
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "idcTYy6kf4ZZ4K4g",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b3721a99-9ed5-4be2-8bc8-be8a842f2d7c",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read from Bronze": {
+      "main": [
+        [
+          {
+            "node": "Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrichment": {
+      "main": [
+        [
+          {
+            "node": "Upsert to Gold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Read from Bronze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "99a53cb9-418c-47d4-a94e-4e7fc5c44219",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d57440843096aa0233273a64b42e00a17f4c2e314888ede4ebf38ae264314a50"
+  },
+  "id": "nyJzz1ewOrn7QQkm-tjWP",
+  "tags": []
+}
